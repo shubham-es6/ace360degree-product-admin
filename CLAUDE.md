@@ -4,10 +4,12 @@ Figma (visual style reference): https://www.figma.com/design/iTEhbAViSLLG046nw6H
 (fileKey `iTEhbAViSLLG046nw6H2VS`, node `1:674` – "Product List" admin dashboard)
 
 ## Stack
-Laravel 13 (latest stable; originally specified as Laravel 11, upgraded because local PHP is 8.6),
+Laravel 13 (latest stable; originally specified as Laravel 11), running on PHP 8.4,
 Blade, MySQL, Tailwind CSS v4 (via Vite), Alpine.js only where needed.
 
-Local environment (macOS, Homebrew): PHP 8.6, Composer 2.11, MySQL 26.10 (`brew services`),
+Local environment (macOS, Homebrew): PHP 8.4 (`php@8.4`, linked as default `php`;
+PHP 8.6 caused a `zend_mm_heap corrupted` crash, so it is installed but unlinked;
+Composer `config.platform.php` is pinned to 8.4.28), Composer 2.11, MySQL 26.10 (`brew services`),
 database `ace360degree`, user `root`, no password, localhost only.
 
 ## Products table
