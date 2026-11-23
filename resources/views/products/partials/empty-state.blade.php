@@ -22,7 +22,7 @@
         {{-- The products table is completely empty. --}}
         <h2 class="mt-4 text-base font-semibold text-ink">No products yet</h2>
         <p class="mt-1 max-w-sm text-sm text-muted">Add your first product to start building your catalogue.</p>
-        <a href="{{ route('products.create') }}"
+        <a href="{{ route('products.create', request()->query()) }}" @click.prevent="$dispatch('open-create-product')"
            class="mt-5 inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-white shadow-sm hover:bg-primary-dark">
             <img src="{{ asset('images/icons/plus.svg') }}" alt="" width="9.333" height="9.333">
             Add Product

@@ -13,7 +13,7 @@
         <span class="sr-only xl:hidden">Export CSV</span>
     </a>
 
-    <a href="{{ route('products.create') }}"
+    <a href="{{ route('products.create', request()->query()) }}" @click.prevent="$dispatch('open-create-product')"
        class="flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm leading-5 font-medium tracking-[0.07px] whitespace-nowrap text-white shadow-sm hover:bg-primary-dark sm:px-4">
         <img src="{{ asset('images/icons/plus.svg') }}" alt="" width="9.333" height="9.333">
         <span class="hidden sm:inline">Add Product</span>
@@ -67,4 +67,16 @@
             @endif
         </section>
     </div>
+
+    {{-- Add Product modal. Opens when: the Add button is clicked, the URL is /products/create,
+         or the Add form came back with validation errors. --}}
+    @php($openCreate = ($openCreate ?? false) || (old('_form') === 'create' && $errors->any()))
+    @include('products.partials.form-modal', [
+        'product' => new \App\Models\Product(),
+        'open' => $openCreate,
+        'closeUrl' => request()->routeIs('products.create') ? route('products.index', request()->query()) : null,
+    ])
+
+    {{-- Edit modal (only on /products/{id}/edit, see edit.blade.php). --}}
+    @yield('modal')
 @endsection

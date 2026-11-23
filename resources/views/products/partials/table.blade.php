@@ -90,7 +90,7 @@
                                title="View" aria-label="View {{ $product->name }}">
                                 <x-icon name="eye" class="size-4" />
                             </a>
-                            <a href="{{ route('products.edit', $product) }}" class="rounded p-1 text-muted hover:bg-tint hover:text-primary"
+                            <a href="{{ route('products.edit', [$product] + request()->query()) }}" class="rounded p-1 text-muted hover:bg-tint hover:text-primary"
                                title="Edit" aria-label="Edit {{ $product->name }}">
                                 <x-icon name="pencil" class="size-4" />
                             </a>

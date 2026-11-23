@@ -20,6 +20,7 @@
          @click="sidebarOpen = false"></div>
 
     @include('partials.sidebar')
+    @include('partials.toast')
 
     {{-- Everything right of the 256px sidebar (desktop) / full width (mobile). --}}
     <div class="flex min-h-screen flex-col lg:pl-64">

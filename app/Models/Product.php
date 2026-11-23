@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
@@ -143,6 +142,7 @@ class Product extends Model
     /** Public URL of the uploaded image, or null. */
     public function imageUrl(): ?string
     {
-        return $this->image_path ? Storage::disk('public')->url($this->image_path) : null;
+        // asset() uses the current host, so it works on 127.0.0.1 and localhost alike.
+        return $this->image_path ? asset('storage/' . $this->image_path) : null;
     }
 }

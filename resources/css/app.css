@@ -27,6 +27,7 @@
     --color-success-pill: #d9ece6;  /* "Active" status pill */
     --color-danger-soft: #fff0ef;   /* "low stock" stat icon */
     --color-inactive-pill: #e9f1ff; /* "Inactive" status pill */
+    --color-mint: #85f8c4;          /* success toast icon */
 }
 
 /*

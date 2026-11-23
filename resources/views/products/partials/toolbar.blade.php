@@ -78,7 +78,7 @@
             <x-icon name="chevron-down" class="pointer-events-none absolute top-1/2 right-2 size-4 -translate-y-1/2 text-muted" />
         </div>
 
-        <a href="{{ route('products.create') }}"
+        <a href="{{ route('products.create', request()->query()) }}" @click.prevent="$dispatch('open-create-product')"
            class="flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm leading-5 font-medium tracking-[0.07px] whitespace-nowrap text-white shadow-sm hover:bg-primary-dark">
             <img src="{{ asset('images/icons/plus.svg') }}" alt="" width="9.333" height="9.333">
             Add Product

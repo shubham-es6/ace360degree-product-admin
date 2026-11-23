@@ -25,3 +25,7 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Design references (kept locally, not committed)
+/design-delete.png
+/design-add-product.pdf
