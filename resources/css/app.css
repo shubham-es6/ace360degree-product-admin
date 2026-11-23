@@ -3,7 +3,40 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/*
+ * Design tokens taken from the Figma file. Each "--color-xyz" automatically
+ * becomes Tailwind classes such as bg-xyz, text-xyz and border-xyz.
+ */
 @theme {
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --color-page: #f8f9ff;          /* workspace background */
+    --color-primary: #2563eb;       /* primary buttons, brand logo */
+    --color-primary-dark: #004ac6;  /* active nav text + border */
+    --color-primary-soft: #eff4ff;  /* active nav background */
+    --color-ink: #0b1c30;           /* headings, main text */
+    --color-muted: #434655;         /* secondary text, nav items */
+    --color-subtle: #737686;        /* placeholders */
+    --color-line: #c3c6d7;          /* borders and dividers */
+    --color-danger: #ba1a1a;        /* errors, logout, notification dot */
+    --color-success: #006243;       /* "operational" / success text */
+    --color-avatar: #d3e4fe;        /* avatar background */
+}
+
+/*
+ * Single-colour icon drawn with a CSS mask, so it takes the text colour
+ * (currentColor). Lets one SVG file be grey normally and blue when active.
+ * Usage: <span class="icon size-4" style="--icon: url('/images/icons/x.svg')"></span>
+ */
+@utility icon {
+    display: inline-block;
+    flex-shrink: 0;
+    background-color: currentColor;
+    mask: var(--icon) center / contain no-repeat;
+}
+
+/* Hide Alpine-controlled elements until Alpine has started (avoids a flash). */
+[x-cloak] {
+    display: none !important;
 }
