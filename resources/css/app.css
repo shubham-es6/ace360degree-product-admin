@@ -22,6 +22,11 @@
     --color-danger: #ba1a1a;        /* errors, logout, notification dot */
     --color-success: #006243;       /* "operational" / success text */
     --color-avatar: #d3e4fe;        /* avatar background */
+    --color-tint: #e5eeff;          /* category badges, stock bar track, stat icon */
+    --color-success-soft: #e5f1ee;  /* "active products" stat icon */
+    --color-success-pill: #d9ece6;  /* "Active" status pill */
+    --color-danger-soft: #fff0ef;   /* "low stock" stat icon */
+    --color-inactive-pill: #e9f1ff; /* "Inactive" status pill */
 }
 
 /*
