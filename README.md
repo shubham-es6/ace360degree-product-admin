@@ -249,18 +249,29 @@ routes/web.php
 
 ## Screenshots
 
-Screenshots are in `docs/screenshots/`.
+### Product list
+![Product list](docs/screenshots/01-product-list.png)
 
-| Screen | File |
-|---|---|
-| Product list | `docs/screenshots/01-product-list.png` |
-| Search + filters combined | `docs/screenshots/02-filters.png` |
-| Add Product modal | `docs/screenshots/03-add-product.png` |
-| Validation errors | `docs/screenshots/04-validation.png` |
-| Edit Product modal | `docs/screenshots/05-edit-product.png` |
-| Delete confirmation | `docs/screenshots/06-delete-confirmation.png` |
-| Empty state | `docs/screenshots/07-empty-state.png` |
-| Mobile view | `docs/screenshots/08-mobile.png` |
+### Search + filters combined (Apparel, Active, sorted by price) with Reset Filters
+![Filters](docs/screenshots/02-filters.png)
+
+### Add Product modal
+![Add Product](docs/screenshots/03-add-product.png)
+
+### Validation errors (empty name, duplicate SKU, negative price, missing stock)
+![Validation](docs/screenshots/04-validation.png)
+
+### Edit Product modal
+![Edit Product](docs/screenshots/05-edit-product.png)
+
+### Delete confirmation (button disabled until the checkbox is ticked)
+![Delete confirmation](docs/screenshots/06-delete-confirmation.png)
+
+### Empty state
+![Empty state](docs/screenshots/07-empty-state.png)
+
+### Mobile view
+<img src="docs/screenshots/08-mobile.png" alt="Mobile view" width="320">
 
 ---
 
