@@ -2,6 +2,9 @@
     Add / Edit product modal. The SAME partial is used for both:
       - Add:  $product is a new, empty Product  -> POST /products
       - Edit: $product is an existing Product   -> PUT  /products/{id}
+    The fields, validation errors, old() values and form handling are shared;
+    only the look differs: Add follows design-add-product, Edit follows design-edit
+    (wider layout, status toggle, large image, "Delete SKU" in the footer).
 
     Variables:
       $product   Product being created or edited
@@ -20,7 +23,7 @@
     $value = fn (string $field, $default = null) => $isMine ? old($field, $default) : $default;
 
     // Keep the list's filters in the URL, so after saving you land on the same page.
-    $listQuery = \Illuminate\Support\Arr::only(request()->query(), ['search', 'category', 'status', 'sort', 'per_page', 'page']);
+    $listQuery = \App\Support\ProductListQuery::current();
     $action = $isEdit
         ? route('products.update', [$product] + $listQuery)
         : route('products.store', $listQuery);
@@ -40,36 +43,54 @@
         'inactive' => ['label' => 'Inactive', 'hint' => 'Hidden from customer views', 'dot' => 'bg-danger'],
     ];
     $currentStatus = $value('status', $product->status ?? 'active');
+
+    // Larger inputs/labels used by the Edit design.
+    $labelLg = 'text-[15px] leading-6 font-medium text-ink';
+    $inputLg = 'h-11 w-full rounded-lg border bg-white px-4 text-[15px] text-ink placeholder:text-subtle focus:ring-2 focus:outline-none';
+    $panelLabel = 'block text-[11px] leading-4 font-semibold tracking-[0.55px] text-muted uppercase';
 @endphp
 
-<div x-data="productModal({ open: @js($open), closeUrl: @js($closeUrl), imageUrl: @js($product->imageUrl()) })"
+<div x-data="productModal({ open: @js($open), closeUrl: @js($closeUrl), imageUrl: @js($product->imageUrl()), status: @js($currentStatus) })"
      @if (! $isEdit) @open-create-product.window="show()" @endif
-     @keydown.escape.window="open && close()">
+     @keydown.escape.window="onEscape()">
 
     <div x-cloak x-show="open" x-transition.opacity
-         class="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-ink/40 p-4 backdrop-blur-[2px] sm:py-8"
+         class="fixed inset-0 z-[60] flex items-center justify-center bg-ink/40 p-4 backdrop-blur-[2px] sm:p-8"
          @click.self="close()">
 
         <div x-show="open" x-transition
-             class="w-full max-w-[803px] overflow-hidden rounded-xl bg-white shadow-2xl"
+             @class(['flex max-h-full w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl', 'max-w-[1056px] rounded-2xl' => $isEdit, 'max-w-[803px]' => ! $isEdit])
              role="dialog" aria-modal="true" aria-labelledby="{{ $id('title') }}">
 
             {{-- Header --}}
-            <div class="flex items-start justify-between gap-4 border-b border-line px-5 py-4 sm:px-[22px]">
-                <div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h2 id="{{ $id('title') }}" class="text-lg leading-6 font-semibold tracking-[-0.2px] text-ink">
-                            {{ $isEdit ? 'Edit Product' : 'Add New Product' }}
+            @if ($isEdit)
+            <div class="flex shrink-0 items-start justify-between gap-4 border-b border-line px-5 py-5 sm:px-7">
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <h2 id="{{ $id('title') }}" class="text-xl leading-7 font-semibold tracking-[-0.3px] break-words text-ink">
+                            Edit Product: {{ $product->name }}
                         </h2>
-                        @if ($isEdit)
-                            <span class="rounded-md bg-tint px-2 py-0.5 font-mono text-[11px] leading-4 font-medium text-muted">{{ $product->sku }}</span>
-                        @endif
+                        <x-status-pill :product="$product" />
                     </div>
+                    <p class="mt-1.5 flex flex-wrap items-center gap-2 text-[13px] leading-5 text-muted">
+                        <span class="rounded-md bg-tint px-2 py-0.5 font-mono text-xs font-medium text-primary-dark">ID: #{{ $product->id }}</span>
+                        <span aria-hidden="true">•</span>
+                        <span class="flex items-center gap-1.5" title="{{ $product->updated_at?->format('d M Y, H:i') }}">
+                            <x-icon name="clock" class="size-3.5" />
+                            Last modified {{ $product->updated_at?->diffForHumans() }}
+                        </span>
+                    </p>
+                </div>
+            @else
+            <div class="flex shrink-0 items-start justify-between gap-4 border-b border-line px-5 py-4 sm:px-[22px]">
+                <div>
+                    <h2 id="{{ $id('title') }}" class="text-lg leading-6 font-semibold tracking-[-0.2px] text-ink">Add New Product</h2>
                     <p class="mt-0.5 text-[13px] leading-[18px] text-muted">
-                        {{ $isEdit ? 'Update the product details below.' : 'Fill in the product details below.' }}
+                        Fill in the product details below.
                         Starred fields (<span class="text-danger">*</span>) are mandatory for MySQL catalog sync.
                     </p>
                 </div>
+            @endif
                 <button type="button" class="-mr-1 rounded-lg p-1.5 text-muted hover:bg-page hover:text-ink" @click="close()" aria-label="Close">
                     <svg class="size-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true">
                         <path d="M5 5l10 10M15 5L5 15" />
@@ -81,14 +102,21 @@
                 enctype="multipart/form-data" is required for file uploads.
                 novalidate: let the server (ProductRequest) do all the validation,
                 so errors always appear in the same style under each field.
+                Layout: header and footer stay put, only the middle (fields) scrolls.
             --}}
-            <form method="POST" action="{{ $action }}" enctype="multipart/form-data" novalidate>
+            <form method="POST" action="{{ $action }}" enctype="multipart/form-data" novalidate class="flex min-h-0 flex-1 flex-col">
                 @csrf
                 @if ($isEdit)
                     @method('PUT')
                 @endif
                 <input type="hidden" name="_form" value="{{ $formKey }}">
+                <input type="hidden" name="remove_image" :value="removeImage ? 1 : 0">
 
+                {{-- Scrollable body --}}
+                <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                @if ($isEdit)
+                    @include('products.partials.form-edit-fields')
+                @else
                 <div class="grid grid-cols-1 gap-x-[18px] gap-y-4 px-5 py-5 sm:grid-cols-2 sm:px-[22px]">
 
                     {{-- Product name --}}
@@ -182,46 +210,6 @@
                         @if ($errorFor('status')) <p class="{{ $error }}">{{ $errorFor('status') }}</p> @endif
                     </fieldset>
 
-                    {{-- Image upload with preview --}}
-                    <div class="sm:col-span-2">
-                        <span class="{{ $label }}">Product Image <span class="text-[11px] font-normal text-muted">(Optional)</span></span>
-                        <input type="hidden" name="remove_image" :value="removeImage ? 1 : 0">
-
-                        <div class="mt-1.5 flex flex-col gap-3 sm:flex-row sm:items-center">
-                            {{-- Preview --}}
-                            <div class="flex size-[72px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line bg-page text-subtle">
-                                <img x-show="previewUrl" :src="previewUrl" alt="Product image preview" class="size-full object-cover"
-                                     @if ($product->imageUrl()) src="{{ $product->imageUrl() }}" @else x-cloak @endif>
-                                <x-icon name="image" class="size-7" x-show="!previewUrl" />
-                            </div>
-
-                            {{-- Drop zone: the whole box is a <label>, so clicking it opens the file picker --}}
-                            <label for="{{ $id('image') }}"
-                                   x-data="{ dragging: false }"
-                                   @dragover.prevent="dragging = true" @dragleave.prevent="dragging = false"
-                                   @drop.prevent="dragging = false; dropImage($event)"
-                                   :class="dragging ? 'border-primary bg-primary-soft' : 'border-line bg-white hover:bg-page'"
-                                   @class([
-                                       'flex flex-1 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-4 py-3 text-center transition-colors',
-                                       'border-danger!' => $errorFor('image'),
-                                   ])>
-                                <span class="text-[13px] leading-[18px] text-ink"><span class="font-medium text-primary">Click to upload</span> or drag and drop</span>
-                                <span class="text-[11px] leading-[14px] text-muted">JPG, PNG or WEBP · max 2 MB</span>
-                                <span x-show="fileName" x-text="fileName" x-cloak class="mt-1 text-[11px] leading-[14px] font-medium text-primary-dark"></span>
-                            </label>
-                            <input id="{{ $id('image') }}" x-ref="image" type="file" name="image" accept="image/jpeg,image/png,image/webp" class="sr-only"
-                                   @change="previewImage($event.target.files[0])">
-
-                            <button type="button" x-show="previewUrl" x-cloak @click="clearImage()"
-                                    class="flex h-9 items-center gap-1.5 self-start rounded-lg px-3 text-[13px] font-medium text-danger hover:bg-danger-soft sm:self-center">
-                                <x-icon name="trash" class="size-3.5" />
-                                Remove
-                            </button>
-                        </div>
-                        <p x-show="fileError" x-text="fileError" x-cloak class="{{ $error }}"></p>
-                        @if ($errorFor('image')) <p class="{{ $error }}">{{ $errorFor('image') }}</p> @endif
-                    </div>
-
                     {{-- Description: plain text only (no HTML / rich text) --}}
                     <div class="sm:col-span-2">
                         <div class="flex items-end justify-between gap-2">
@@ -236,19 +224,97 @@
                                   class="mt-1.5 block w-full resize-y rounded-lg border bg-white px-3 py-2.5 text-[13px] leading-5 text-ink placeholder:text-subtle focus:ring-2 focus:outline-none {{ $inputState('description') }}">{{ $value('description', $product->description) }}</textarea>
                         @if ($errorFor('description')) <p class="{{ $error }}">{{ $errorFor('description') }}</p> @endif
                     </div>
+
+                    {{--
+                        Image upload: dashed drag & drop box (left) + preview card with ✕ (right).
+                        The box is a <label> for the hidden file input, so clicking anywhere in it
+                        (including "browse file") opens the file picker.
+                    --}}
+                    <div class="sm:col-span-2">
+                        <span class="{{ $label }}">Product Image Upload Area <span class="text-[11px] font-normal text-muted">(Optional)</span></span>
+
+                        <div class="mt-1.5 flex flex-col gap-4 sm:flex-row">
+                            <label for="{{ $id('image') }}"
+                                   x-data="{ dragging: false }"
+                                   @dragover.prevent="dragging = true" @dragleave.prevent="dragging = false"
+                                   @drop.prevent="dragging = false; dropImage($event)"
+                                   :class="dragging ? 'border-primary! bg-primary-soft' : (fileError ? 'border-danger! bg-danger-soft/40' : 'bg-page/60 hover:bg-page')"
+                                   @class([
+                                       'flex min-h-[176px] flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors',
+                                       'border-danger' => $errorFor('image'),
+                                       'border-line' => ! $errorFor('image'),
+                                   ])>
+                                <span class="flex size-10 items-center justify-center rounded-full bg-white text-primary shadow-sm">
+                                    <x-icon name="upload" class="size-5" />
+                                </span>
+                                <span class="text-sm leading-5 font-medium text-ink">
+                                    Drag &amp; drop product thumbnail or
+                                    <span class="text-primary underline underline-offset-2">browse file</span>
+                                </span>
+                                <span class="text-[11px] leading-[14px] text-muted">JPG, PNG or WEBP · max 2 MB · square or 4:3 recommended</span>
+                            </label>
+                            <input id="{{ $id('image') }}" x-ref="image" type="file" name="image" accept="image/jpeg,image/png,image/webp" class="sr-only"
+                                   @change="previewImage($event.target.files[0])">
+
+                            {{-- Preview card, only when an image is selected --}}
+                            <div x-show="previewUrl" x-cloak
+                                 class="relative w-full shrink-0 rounded-xl border border-line bg-white p-2 shadow-sm sm:w-[234px]">
+                                <div class="aspect-square overflow-hidden rounded-lg bg-page">
+                                    <img :src="previewUrl" alt="Selected product image" class="size-full object-cover">
+                                </div>
+                                <p x-show="fileName" x-text="fileName" class="mt-1.5 truncate px-1 text-[11px] leading-[14px] text-muted"></p>
+                                <button type="button" @click="clearImage()"
+                                        class="absolute top-3.5 right-3.5 flex size-7 items-center justify-center rounded-full bg-ink/80 text-white shadow hover:bg-ink"
+                                        aria-label="Remove selected image" title="Remove image">
+                                    <svg class="size-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                                        <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Type/size errors: instant check in the browser, and the server's message after submit --}}
+                        <p x-show="fileError" x-text="fileError" x-cloak class="{{ $error }}"></p>
+                        @if ($errorFor('image')) <p class="{{ $error }}" x-show="!fileError">{{ $errorFor('image') }}</p> @endif
+                    </div>
                 </div>
 
-                {{-- Footer --}}
-                <div class="flex flex-col-reverse gap-2 border-t border-line bg-page px-5 py-3.5 sm:flex-row sm:justify-end sm:px-[22px]">
+                @endif
+                </div>
+
+                {{-- Footer (fixed at the bottom of the modal) --}}
+                @if ($isEdit)
+                <div class="flex shrink-0 flex-col gap-3 border-t border-line bg-primary-soft/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+                    {{-- Opens the same delete confirmation modal as the table's trash icon (Step 6). --}}
+                    <x-delete-button :product="$product"
+                                     class="flex h-11 items-center gap-2 self-start rounded-lg px-2 text-[15px] font-medium text-danger hover:bg-danger-soft sm:self-auto">
+                        <x-icon name="trash" class="size-4" />
+                        Delete SKU
+                    </x-delete-button>
+                    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
+                        <button type="button" @click="close()"
+                                class="h-11 rounded-lg border border-line bg-white px-5 text-[15px] font-medium text-ink hover:bg-page">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-[15px] font-medium text-white shadow-sm hover:bg-primary-dark">
+                            <x-icon name="check" class="size-4" />
+                            Update Product Changes
+                        </button>
+                    </div>
+                </div>
+                @else
+                <div class="flex shrink-0 flex-col-reverse gap-2 border-t border-line bg-page px-5 py-3.5 sm:flex-row sm:justify-end sm:px-[22px]">
                     <button type="button" @click="close()"
                             class="h-9 rounded-lg border border-line bg-white px-4 text-sm font-medium text-ink hover:bg-page">
                         Cancel
                     </button>
                     <button type="submit"
                             class="flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-white shadow-sm hover:bg-primary-dark">
-                        {{ $isEdit ? 'Save Changes' : 'Save Product' }}
+                        Save Product
                     </button>
                 </div>
+                @endif
             </form>
         </div>
     </div>

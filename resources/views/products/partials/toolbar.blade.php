@@ -63,6 +63,12 @@
             </a>
         @endif
 
+        {{-- The "Rows per page" select (footer) isn't shown when the list is empty,
+             so keep the chosen value here; otherwise changing a filter would reset it to 10. --}}
+        @if ($products->isEmpty() && $perPage !== 10)
+            <input type="hidden" name="per_page" value="{{ $perPage }}">
+        @endif
+
         {{-- Lets keyboard / screen-reader users submit the search explicitly. --}}
         <button type="submit" class="sr-only">Apply filters</button>
     </form>

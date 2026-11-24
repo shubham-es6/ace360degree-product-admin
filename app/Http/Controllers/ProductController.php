@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProductRequest;
 use App\Models\Product;
+use App\Support\ProductListQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,9 +20,18 @@ class ProductController extends Controller
      * Everything comes from the URL query string, e.g.
      * /products?search=mug&category=Home+%26+Living&status=active&sort=price_asc&per_page=25&page=2
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
-        return view('products.index', $this->listData($request));
+        $data = $this->listData($request);
+        $products = $data['products'];
+
+        // A page number past the end (e.g. ?page=99 typed by hand, or an old bookmark)
+        // would show an empty table. Send the user to the real last page instead.
+        if ($products->isEmpty() && $products->currentPage() > 1) {
+            return redirect()->to($products->url($products->lastPage()));
+        }
+
+        return view('products.index', $data);
     }
 
     /**
@@ -57,10 +67,13 @@ class ProductController extends Controller
             ]);
     }
 
-    /** Built in Step 6 (with the delete flow). */
-    public function show(Product $product)
+    /**
+     * Product details page. {product} in the URL is turned into a Product
+     * automatically (route model binding); an unknown id gives a 404 page.
+     */
+    public function show(Product $product): View
     {
-        abort(501, 'Product details are added later.');
+        return view('products.show', compact('product'));
     }
 
     /**
@@ -116,7 +129,7 @@ class ProductController extends Controller
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM so Excel shows "–", "é" etc. correctly
 
-            fputcsv($out, ['ID', 'Name', 'SKU', 'Category', 'Price', 'Stock Quantity', 'Status', 'Description', 'Created At', 'Updated At']);
+            fputcsv($out, ['ID', 'Name', 'SKU', 'Category', 'Price', 'Stock Quantity', 'Status', 'Description', 'Created At', 'Updated At'], escape: '');
 
             // lazy() loads 1000 rows at a time, so a large catalogue doesn't use lots of memory.
             foreach ($query->lazy() as $product) {
@@ -131,7 +144,7 @@ class ProductController extends Controller
                     $product->description,
                     $product->created_at?->toDateTimeString(),
                     $product->updated_at?->toDateTimeString(),
-                ]));
+                ]), escape: ''); // escape: '' = standard CSV quoting (and avoids a PHP 8.4 deprecation)
             }
 
             fclose($out);
@@ -140,13 +153,46 @@ class ProductController extends Controller
 
 
 
-
-
-
-    /** Built in Step 6. */
-    public function destroy(Product $product)
+    /**
+     * Delete a product (DELETE /products/{product}), sent by the confirmation modal.
+     */
+    public function destroy(Request $request, Product $product): RedirectResponse
     {
-        abort(501, 'Deleting is added in Step 6.');
+        $name = $product->name;
+        $imagePath = $product->image_path;
+
+        // 1. Remove the row from MySQL.
+        $product->delete();
+
+        // 2. Remove its image file too, so no orphaned files pile up in storage.
+        if ($imagePath) {
+            Storage::disk('public')->delete($imagePath);
+        }
+
+        // 3. Go back to the same filtered list and page. If that page no longer
+        //    exists (we deleted its only row), go to the new last page instead.
+        $query = $this->listQuery($request);
+        $page = (int) ($query['page'] ?? 1);
+
+        if ($page > 1) {
+            $remaining = $this->filteredQuery($this->filtersFrom($request))->count();
+            $lastPage = max(1, (int) ceil($remaining / $this->perPageFrom($request)));
+
+            if ($page > $lastPage) {
+                $query['page'] = $lastPage;
+            }
+        }
+
+        if (($query['page'] ?? null) == 1) {
+            unset($query['page']); // keep URLs tidy: page 1 is the default
+        }
+
+        return redirect()
+            ->route('products.index', $query)
+            ->with('toast', [
+                'title' => "Product '{$name}' deleted successfully",
+                'message' => 'It has been permanently removed from your catalogue',
+            ]);
     }
 
     /* ------------------------------------------------------------------ */
@@ -159,9 +205,7 @@ class ProductController extends Controller
     {
         $filters = $this->filtersFrom($request);
 
-        $perPage = in_array((int) $request->query('per_page'), Product::PER_PAGE_OPTIONS, true)
-            ? (int) $request->query('per_page')
-            : 10;
+        $perPage = $this->perPageFrom($request);
 
         $products = $this->filteredQuery($filters)
             ->paginate($perPage)        // LIMIT/OFFSET in SQL + a COUNT(*) for the total
@@ -192,9 +236,16 @@ class ProductController extends Controller
     {
         // query() = only the URL's ?a=b part. (The form body also has "category" and "status" fields,
         // which must not be mistaken for list filters.)
-        return Arr::only($request->query(), ['search', 'category', 'status', 'sort', 'per_page', 'page']);
+        return Arr::only($request->query(), ProductListQuery::KEYS);
     }
 
+    /** Rows per page from the URL; only 5, 10, 25 or 50 are allowed (default 10). */
+    private function perPageFrom(Request $request): int
+    {
+        $perPage = (int) $request->query('per_page');
+
+        return in_array($perPage, Product::PER_PAGE_OPTIONS, true) ? $perPage : 10;
+    }
 
     /**
      * Read the filters from the URL. Anything not on an allowed list is ignored,

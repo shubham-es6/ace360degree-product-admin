@@ -39,7 +39,7 @@
                     </td>
 
                     <td class="px-4 py-3">
-                        <a href="{{ route('products.show', $product) }}" class="block max-w-[171px] text-sm leading-5 font-semibold tracking-[0.07px] text-ink hover:text-primary">
+                        <a href="{{ route('products.show', [$product] + \App\Support\ProductListQuery::current()) }}" class="block max-w-[171px] text-sm leading-5 font-semibold tracking-[0.07px] text-ink hover:text-primary">
                             {{ $product->name }}
                         </a>
                         <span class="block font-mono text-[11px] leading-[14px] text-muted">SKU: {{ $product->sku }}</span>
@@ -73,36 +73,24 @@
                     </td>
 
                     <td class="px-4 py-3 text-center">
-                        @if ($product->isActive())
-                            <span class="inline-flex h-5 items-center gap-1.5 rounded-full border border-success/15 bg-success-pill px-2.5 text-[11px] leading-[14px] font-medium text-success">
-                                <span class="size-1.5 rounded-full bg-success" aria-hidden="true"></span>Active
-                            </span>
-                        @else
-                            <span class="inline-flex h-5 items-center gap-1.5 rounded-full border border-line bg-inactive-pill px-2.5 text-[11px] leading-[14px] font-medium text-subtle">
-                                <span class="size-1.5 rounded-full bg-subtle" aria-hidden="true"></span>Inactive
-                            </span>
-                        @endif
+                        <x-status-pill :product="$product" />
                     </td>
 
                     <td class="px-4 py-3">
                         <div class="flex items-center justify-end gap-1">
-                            <a href="{{ route('products.show', $product) }}" class="rounded p-1 text-muted hover:bg-tint hover:text-ink"
+                            <a href="{{ route('products.show', [$product] + \App\Support\ProductListQuery::current()) }}" class="rounded p-1 text-muted hover:bg-tint hover:text-ink"
                                title="View" aria-label="View {{ $product->name }}">
                                 <x-icon name="eye" class="size-4" />
                             </a>
-                            <a href="{{ route('products.edit', [$product] + request()->query()) }}" class="rounded p-1 text-muted hover:bg-tint hover:text-primary"
+                            <a href="{{ route('products.edit', [$product] + \App\Support\ProductListQuery::current()) }}" class="rounded p-1 text-muted hover:bg-tint hover:text-primary"
                                title="Edit" aria-label="Edit {{ $product->name }}">
                                 <x-icon name="pencil" class="size-4" />
                             </a>
-                            {{-- Real DELETE request (HTML forms only do GET/POST, so @method fakes DELETE). Confirmation comes in Step 6. --}}
-                            <form method="POST" action="{{ route('products.destroy', $product) }}">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="rounded p-1 text-muted hover:bg-danger-soft hover:text-danger"
-                                        title="Delete" aria-label="Delete {{ $product->name }}">
-                                    <x-icon name="trash" class="size-4" />
-                                </button>
-                            </form>
+                            {{-- Opens the single delete confirmation modal for this product. --}}
+                            <x-delete-button :product="$product" class="rounded p-1 text-muted hover:bg-danger-soft hover:text-danger"
+                                             title="Delete" aria-label="Delete {{ $product->name }}">
+                                <x-icon name="trash" class="size-4" />
+                            </x-delete-button>
                         </div>
                     </td>
                 </tr>

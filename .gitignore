@@ -29,3 +29,8 @@ Thumbs.db
 # Design references (kept locally, not committed)
 /design-delete.png
 /design-add-product.pdf
+/design-edit.pdf
+/design-add-product-full.pdf
+
+# Personal review notes (not for the repo)
+/REVIEW_NOTES.md

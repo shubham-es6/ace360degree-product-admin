@@ -40,5 +40,17 @@
         @case('box')
             <path d="M2.5 6.5L10 3l7.5 3.5v7L10 17l-7.5-3.5v-7z" /><path d="M2.5 6.5L10 10l7.5-3.5M10 10v7" />
             @break
+        @case('clock')
+            <circle cx="10" cy="10" r="7" /><path d="M10 6.5V10l2.5 1.5" />
+            @break
+        @case('copy')
+            <rect x="7" y="7" width="9.5" height="9.5" rx="1.5" /><path d="M4.5 13H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v.5" />
+            @break
+        @case('check')
+            <path d="M4 10.5l4 4 8-9" />
+            @break
+        @case('upload')
+            <path d="M6 14.5H5a3.5 3.5 0 0 1-.4-7A5 5 0 0 1 14.3 6 3.8 3.8 0 0 1 15 14.5h-1" /><path d="M10 17v-7M7.5 12.5L10 10l2.5 2.5" />
+            @break
     @endswitch
 </svg>

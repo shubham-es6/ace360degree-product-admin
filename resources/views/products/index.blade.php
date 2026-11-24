@@ -79,4 +79,7 @@
 
     {{-- Edit modal (only on /products/{id}/edit, see edit.blade.php). --}}
     @yield('modal')
+
+    {{-- One delete confirmation modal, shared by every row's trash button. --}}
+    @include('products.partials.delete-modal')
 @endsection
